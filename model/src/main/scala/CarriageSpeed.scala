@@ -1,1 +1,0 @@
-case class CarriageSpeed(value: Int)
