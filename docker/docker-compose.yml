@@ -20,7 +20,22 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on:
       - zookeeper
-
+  carriage-speed-simulator:
+    build: ./sensor-simulator
+    command: ["./app.sh", "carriageSpeed"]
+    tty: true
+    depends_on:
+      - kafka
+  bed-temp-simulator:
+    build: ./sensor-simulator
+    command: ["./app.sh", "bedTemp"]
+    tty: true
+    depends_on:
+      - kafka
+  consumer:
+    build: ./consumer
+    command: sbt run
+    tty: true
 volumes:
   zookeeper_data:
     driver: local

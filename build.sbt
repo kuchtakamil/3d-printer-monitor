@@ -15,15 +15,14 @@ project.in(file("sensor-simulator"))
     .dependsOn(model)
     .settings(commonSettings)
 
-
-
 val commonSettings =
   Seq(
     libraryDependencies ++= Seq(
+      "com.evolutiongaming" %% "skafka" % "15.0.0",
       "org.apache.kafka" % "kafka-clients" % "3.4.0",
       "org.apache.kafka" % "kafka-streams" % "3.4.0",
       "org.apache.kafka" %% "kafka-streams-scala" % "3.4.0",
-      "com.goyeau" %% "kafka-streams-circe" % "0.6.3",
+      "com.github.pureconfig" %% "pureconfig" % "0.17.2",
 //      "io.circe" %% "circe-core" % "0.14.5",
 //      "io.circe" %% "circe-generic" % "0.14.5",
 //      "io.circe" %% "circe-parser" % "0.14.5"

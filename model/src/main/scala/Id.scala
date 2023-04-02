@@ -1,1 +1,0 @@
-case class Id[Resource](value: String) extends AnyVal
