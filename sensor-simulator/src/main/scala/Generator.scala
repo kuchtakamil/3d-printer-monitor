@@ -1,18 +1,13 @@
 import ConfigDomain.{ConfigPayload, Simulator, ValueRange}
 import cats.effect.{Async, IO}
-import pureconfig._
-import pureconfig.generic.auto._
 
-object Generator {
+class Generator(simulator: IO[Simulator]) {
 
   var lastVal: Int = 0
 
   def generate(deviceType: String): IO[Int] = {
     for {
-      simulator <- IO.delay { ConfigSource.default.at("simulator").load[Simulator] }
-      simulator <- simulator.fold(
-        err => IO.raiseError(new RuntimeException(s"parsing failed $err")),
-        IO.pure)
+      simulator <- simulator
       cfgPayload <- chooseDevice(deviceType, simulator) match {
         case Right(v) => IO.pure(v)
         case Left(e) => IO.raiseError(new RuntimeException(e))
@@ -20,10 +15,6 @@ object Generator {
       newVal <- getValueInRangeWithDelta(cfgPayload.valueRange, cfgPayload.avgDelta)
     } yield newVal
   }
-
-  //  }
-  //  case class RandomOp(a: Int, b: Int) {
-  //    def apply: Int = if (scala.util.Random.nextBoolean()) a + b else a - b
 
   private def addOrSubtract(a: Int, b: Int): IO[Int] = {
     IO.delay { scala.util.Random.nextBoolean() }
@@ -47,5 +38,4 @@ object Generator {
       adjustedVal = adjustNumberInRange(v, range.min, range.max)
     } yield adjustedVal
   }
-
 }
