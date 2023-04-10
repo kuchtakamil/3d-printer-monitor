@@ -1,20 +1,17 @@
-import ConfigDomain.{ConfigPayload, Simulator, ValueRange}
-import cats.effect.{Async, IO}
+import ConfigDomain._
+import cats.effect.std.Random
+import cats.effect.{Async, IO, Ref}
 
-class Generator(simulator: IO[Simulator]) {
+class Generator(simulator: IO[Simulator], deviceType: String) {
 
-    trait LastValue {
-      def change(delta: Int): IO[Unit]
-      def get: IO[Int]
-    }
-
-  def generate(deviceType: String): IO[Int] =
+  private val state: IO[LastValue] = initValue.flatMap(a => lastValue(a))
+  def generate: IO[Int] =
     for {
-      cfgPayload <- getCfgPayload(deviceType)
+      cfgPayload <- getCfgPayload
       newVal <- getValueInRangeWithDelta(cfgPayload.valueRange, cfgPayload.avgDelta)
     } yield newVal
 
-  def getCfgPayload(deviceType: String): IO[ConfigPayload] =
+  def getCfgPayload: IO[ConfigPayload] =
     for {
       simulator <- simulator
       cfgPayload <- chooseDevice(deviceType, simulator) match {
@@ -33,24 +30,42 @@ class Generator(simulator: IO[Simulator]) {
 
   private def chooseDevice(deviceType: String, simulator: Simulator): Either[String, ConfigPayload] =
     deviceType match {
-      case "carriage-speed" => Right(simulator.carriageSpeed)
-      case "bed-temp"  => Right(simulator.bedTemp)
+      case ConfigDomain.carriageSpeed => Right(simulator.carriageSpeed)
+      case ConfigDomain.bedTemp  => Right(simulator.bedTemp)
       case _ => Left("unknown device type")
   }
 
   private def getValueInRangeWithDelta(range: ValueRange, delta: Int): IO[Int] =
     for {
-      delta <- IO.delay { scala.util.Random.nextInt(delta) }
-      lastVal <- lastValue.flatMap(_.get)
+      delta <-  IO.delay { scala.util.Random.nextInt(delta) }
+      lastVal <- state.flatMap(_.get)
       newVal <- addOrSubtract(lastVal, delta)
       adjustedVal = adjustNumberInRange(newVal, range.min, range.max)
+      _ = println(s"________________ $newVal = $lastVal $delta")
+      _ <- state.flatMap(state => state.change(adjustedVal))
     } yield adjustedVal
 
-  private def lastValue: IO[LastValue] = IO.delay {
-    var lastValue = 0
+  private trait LastValue {
+    def change(delta: Int): IO[Unit]
+    def get: IO[Int]
+  }
+
+  private def lastValue(initial: Int): IO[LastValue] = IO.delay {
+    var lastValue = initial
     new LastValue {
-      override def change(delta: Int): IO[Unit] = IO.delay(lastValue += delta)
-      override def get: IO[Int] = IO.delay(lastValue)
+      override def change(newVal: Int): IO[Unit] = IO.delay { lastValue = newVal }
+      override def get: IO[Int] = IO.delay { lastValue }
     }
   }
+
+  private def initValue =
+    for {
+      s <- simulator
+      avg = chooseDevice(deviceType, s) match {
+        case Right(v) => (v.valueRange.min + v.valueRange.max) / 2
+        case Left(_) => 100
+      }
+    } yield avg
+
+
 }

@@ -1,4 +1,5 @@
-import ConfigDomain.{ConfigPayload, Simulator}
+import ConfigDomain._
+import cats.Monad
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.kernel.Resource
 import io.circe.syntax._
@@ -14,24 +15,28 @@ object DeviceSimulatorProducer extends IOApp {
 
     implicit val encoder: Encoder[CarriageSpeed] = deriveEncoder[CarriageSpeed]
 
-    def startSending(deviceType: String) {
+    override def run(args: List[String]): IO[ExitCode] = {
+        println(args.length)
+        if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
+            println("invalid argument")
+
+        val deviceType = args(0)
         val printer = Printer.noSpaces
         val simulator: IO[Simulator] = createSimulator
-        val generator: Generator = new Generator(simulator)
+        val generator: Generator = new Generator(simulator, deviceType)
         val sender = KafkaSender
-        val cfg: IO[ConfigPayload] = generator.getCfgPayload(deviceType)
+        val cfg: IO[ConfigPayload] = generator.getCfgPayload
 
         val program =
             for {
-                randomVal       <- Resource.eval(generator.generate(deviceType))
-                carriageSpeed   = CarriageSpeed(Instant.now(), randomVal)
-                jsonString      = printer.print(carriageSpeed.asJson)
-                cfg             <- Resource.eval(cfg)
-                _               <- Resource.eval(sender.send(deviceType, jsonString).flatten)
-                _               <- Resource.eval(IO.sleep(cfg.frequency.seconds))
+                randomVal <- generator.generate
+                carriageSpeed = CarriageSpeed(Instant.now(), randomVal)
+                jsonString = printer.print(carriageSpeed.asJson)
+                cfg <- cfg
+                _ <- sender.send(deviceType, jsonString)
+                _ <- IO.sleep(cfg.frequency.seconds)
             } yield ()
-
-        program.useForever.as(ExitCode.Success)
+        program.foreverM.as(ExitCode.Success)
     }
 
     private def createSimulator: IO[Simulator] = {

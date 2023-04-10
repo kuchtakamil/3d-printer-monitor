@@ -9,7 +9,7 @@ object KafkaSender {
 
   def send(topic: String, payload: String): IO[RecordMetadata] = {
     producer.use { producer =>
-      val record = ProducerRecord(topic = topic, key = "", value = payload)
+      val record = ProducerRecord(topic = topic, key = topic + "-01", value = payload)
       producer.send(record).flatten
     }
   }

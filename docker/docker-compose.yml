@@ -18,24 +18,42 @@ services:
     environment:
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_LISTENERS=INTERNAL://:9093,EXTERNAL://:9092
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://localhost:9092
     depends_on:
       - zookeeper
-  carriage-speed-simulator:
-    build: ./sensor-simulator
-    command: ["./app.sh", "carriageSpeed"]
-    tty: true
+  akhq:
+    container_name: akhq
+    image: tchiotludo/akhq:latest
+    ports:
+      - "8080:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            kafka-dev:
+              properties:
+                bootstrap.servers: "kafka:9093"
     depends_on:
       - kafka
-  bed-temp-simulator:
-    build: ./sensor-simulator
-    command: ["./app.sh", "bedTemp"]
-    tty: true
-    depends_on:
-      - kafka
-  consumer:
-    build: ./consumer
-    command: sbt run
-    tty: true
+#  carriage-speed-simulator:
+#    build: ./sensor-simulator
+#    command: ["./app.sh", "carriageSpeed"]
+#    tty: true
+#    depends_on:
+#      - kafka
+#  bed-temp-simulator:
+#    build: ./sensor-simulator
+#    command: ["./app.sh", "bedTemp"]
+#    tty: true
+#    depends_on:
+#      - kafka
+#  consumer:
+#    build: ./consumer
+#    command: sbt run
+#    tty: true
 volumes:
   zookeeper_data:
     driver: local
