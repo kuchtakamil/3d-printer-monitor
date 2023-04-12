@@ -1,6 +1,6 @@
 import ConfigDomain._
 import cats.Monad
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.effect.{ExitCode, IO, IOApp, Ref}
 import cats.effect.kernel.Resource
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
@@ -22,14 +22,18 @@ object DeviceSimulatorProducer extends IOApp {
 
         val deviceType = args(0)
         val printer = Printer.noSpaces
-        val simulator: IO[Simulator] = createSimulator
-        val generator: Generator = new Generator(simulator, deviceType)
+//        val simulator: IO[Simulator] = createSimulator
+//        val generator: Generator = new Generator(simulator, deviceType, )
         val sender = KafkaSender
-        val cfg: IO[ConfigPayload] = generator.getCfgPayload
+//        val cfg: IO[ConfigPayload] = generator.getCfgPayload
 
         val program =
             for {
+                ref <- Ref[IO].of(1)
+                simulator <- createSimulator
+                generator = new Generator(simulator, deviceType, ref)
                 randomVal <- generator.generate
+                cfg = generator.getCfgPayload
                 carriageSpeed = CarriageSpeed(Instant.now(), randomVal)
                 jsonString = printer.print(carriageSpeed.asJson)
                 cfg <- cfg

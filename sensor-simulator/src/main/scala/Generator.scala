@@ -2,9 +2,10 @@ import ConfigDomain._
 import cats.effect.std.Random
 import cats.effect.{Async, IO, Ref}
 
-class Generator(simulator: IO[Simulator], deviceType: String) {
+class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
 
-  private val state: IO[LastValue] = initValue.flatMap(a => lastValue(a))
+//  private val state: IO[LastValue] = initValue.flatMap(a => lastValue(a))
+
   def generate: IO[Int] =
     for {
       cfgPayload <- getCfgPayload
@@ -13,7 +14,7 @@ class Generator(simulator: IO[Simulator], deviceType: String) {
 
   def getCfgPayload: IO[ConfigPayload] =
     for {
-      simulator <- simulator
+//      simulator <- simulator
       cfgPayload <- chooseDevice(deviceType, simulator) match {
         case Right(v) => IO.pure(v)
         case Left(e) => IO.raiseError(new RuntimeException(e))
@@ -33,19 +34,19 @@ class Generator(simulator: IO[Simulator], deviceType: String) {
       case ConfigDomain.carriageSpeed => Right(simulator.carriageSpeed)
       case ConfigDomain.bedTemp  => Right(simulator.bedTemp)
       case _ => Left("unknown device type")
-  }
+    }
 
   private def getValueInRangeWithDelta(range: ValueRange, delta: Int): IO[Int] =
     for {
       delta <-  IO.delay { scala.util.Random.nextInt(delta) }
-      lastVal <- state.flatMap(_.get)
+      lastVal <- state.get
       newVal <- addOrSubtract(lastVal, delta)
       adjustedVal = adjustNumberInRange(newVal, range.min, range.max)
       _ = println(s"________________ $newVal = $lastVal $delta")
-      _ <- state.flatMap(state => state.change(adjustedVal))
+      _ <- state.set(adjustedVal)
     } yield adjustedVal
 
-  private trait LastValue {
+  trait LastValue {
     def change(delta: Int): IO[Unit]
     def get: IO[Int]
   }
@@ -59,13 +60,9 @@ class Generator(simulator: IO[Simulator], deviceType: String) {
   }
 
   private def initValue =
-    for {
-      s <- simulator
-      avg = chooseDevice(deviceType, s) match {
+      chooseDevice(deviceType, simulator) match {
         case Right(v) => (v.valueRange.min + v.valueRange.max) / 2
         case Left(_) => 100
       }
-    } yield avg
-
 
 }
