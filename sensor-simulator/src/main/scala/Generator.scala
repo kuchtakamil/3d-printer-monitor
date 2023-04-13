@@ -1,10 +1,7 @@
 import ConfigDomain._
-import cats.effect.std.Random
 import cats.effect.{Async, IO, Ref}
 
 class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
-
-//  private val state: IO[LastValue] = initValue.flatMap(a => lastValue(a))
 
   def generate: IO[Int] =
     for {
@@ -14,7 +11,6 @@ class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
 
   def getCfgPayload: IO[ConfigPayload] =
     for {
-//      simulator <- simulator
       cfgPayload <- chooseDevice(deviceType, simulator) match {
         case Right(v) => IO.pure(v)
         case Left(e) => IO.raiseError(new RuntimeException(e))
@@ -42,27 +38,6 @@ class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
       lastVal <- state.get
       newVal <- addOrSubtract(lastVal, delta)
       adjustedVal = adjustNumberInRange(newVal, range.min, range.max)
-      _ = println(s"________________ $newVal = $lastVal $delta")
       _ <- state.set(adjustedVal)
     } yield adjustedVal
-
-  trait LastValue {
-    def change(delta: Int): IO[Unit]
-    def get: IO[Int]
-  }
-
-  private def lastValue(initial: Int): IO[LastValue] = IO.delay {
-    var lastValue = initial
-    new LastValue {
-      override def change(newVal: Int): IO[Unit] = IO.delay { lastValue = newVal }
-      override def get: IO[Int] = IO.delay { lastValue }
-    }
-  }
-
-  private def initValue =
-      chooseDevice(deviceType, simulator) match {
-        case Right(v) => (v.valueRange.min + v.valueRange.max) / 2
-        case Left(_) => 100
-      }
-
 }

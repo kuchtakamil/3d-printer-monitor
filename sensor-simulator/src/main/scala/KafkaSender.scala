@@ -2,7 +2,7 @@ import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
 import com.evolutiongaming.skafka.producer.{Producer, ProducerConfig, ProducerRecord, RecordMetadata}
 
-object KafkaSender {
+class KafkaSender {
 
   private val producerCfg: ProducerConfig = ProducerConfig.Default
   private val producer: Resource[IO, Producer[IO]] = Producer.of[IO](producerCfg)

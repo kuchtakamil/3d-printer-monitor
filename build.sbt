@@ -2,39 +2,60 @@ enablePlugins(DockerComposePlugin)
 
 ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "1.0"
+
 lazy val root =
   project.in(file("."))
     .aggregate(model, `sensor-simulator`, consumer)
-
 
 lazy val model =
 project.in(file("model"))
 
 lazy val consumer =
-  project.in(file("consumer"))
+project.in(file("consumer"))
     .dependsOn(model)
-    .settings(commonSettings)
+    .settings(consumerDeps, commonDeps)
 
 lazy val `sensor-simulator` =
 project.in(file("sensor-simulator"))
   .dependsOn(model)
-  .settings(commonSettings)
+  .settings(producerDeps, commonDeps)
 
-val commonSettings =
+lazy val skafka = "15.0.0"
+lazy val kafkaFlow = "2.3.1"
+lazy val http4 = "0.23.18"
+lazy val circe = "0.14.5"
+lazy val pureconfig = "0.17.2"
+
+val commonDeps =
   Seq(
     libraryDependencies ++= Seq(
-      "com.evolutiongaming" %% "skafka" % "15.0.0",
-      "org.apache.kafka" % "kafka-clients" % "3.4.0",
-      "org.apache.kafka" % "kafka-streams" % "3.4.0",
-      "org.apache.kafka" %% "kafka-streams-scala" % "3.4.0",
-      "com.github.pureconfig" %% "pureconfig" % "0.17.2",
-      "io.circe" %% "circe-core" % "0.14.5",
-      "io.circe" %% "circe-generic" % "0.14.5",
-      "io.circe" %% "circe-parser" % "0.14.5",
-      "org.http4s" %% "http4s-ember-client" % "0.23.18",
-      "org.http4s" %% "http4s-ember-server" % "0.23.18",
-      "org.http4s" %% "http4s-dsl" % "0.23.18",
+      "com.evolutiongaming" %% "skafka" % skafka,
+      "com.github.pureconfig" %% "pureconfig" % pureconfig,
+      "io.circe" %% "circe-core" % circe,
+      "io.circe" %% "circe-generic" % circe,
+      "io.circe" %% "circe-parser" % circe,
     ),
     testFrameworks += new TestFramework("munit.Framework")
   )
+val producerDeps =
+  Seq(
+    libraryDependencies ++= Seq(
+      "com.evolutiongaming" %% "skafka" % skafka,
+    )
+  )
+val consumerDeps =
+  Seq(
+    libraryDependencies ++= Seq(
+      "com.evolutiongaming" %% "kafka-flow" % kafkaFlow,
+      // if you want to use Kafka compact topic for storing persistent state
+      "com.evolutiongaming" %% "kafka-flow-persistence-kafka" % kafkaFlow,
+      "com.github.pureconfig" %% "pureconfig" % pureconfig,
+      "org.http4s" %% "http4s-ember-client" % http4,
+      "org.http4s" %% "http4s-ember-server" % http4,
+      "org.http4s" %% "http4s-dsl" % http4,
+    )
+  )
+
+
+
 
