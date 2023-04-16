@@ -1,5 +1,3 @@
-enablePlugins(DockerComposePlugin)
-
 ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "1.0"
 
@@ -42,20 +40,14 @@ val producerDeps =
     libraryDependencies ++= Seq(
       "com.evolutiongaming" %% "skafka" % skafka,
     )
-  )
+)
 val consumerDeps =
-  Seq(
-    libraryDependencies ++= Seq(
-      "com.evolutiongaming" %% "kafka-flow" % kafkaFlow,
-      // if you want to use Kafka compact topic for storing persistent state
-      "com.evolutiongaming" %% "kafka-flow-persistence-kafka" % kafkaFlow,
-      "com.github.pureconfig" %% "pureconfig" % pureconfig,
-      "org.http4s" %% "http4s-ember-client" % http4,
-      "org.http4s" %% "http4s-ember-server" % http4,
-      "org.http4s" %% "http4s-dsl" % http4,
+Seq(
+  libraryDependencies ++= Seq(
+    "com.evolutiongaming" %% "skafka" % skafka,
+    "com.github.pureconfig" %% "pureconfig" % pureconfig,
+    "org.http4s" %% "http4s-ember-client" % http4,
+    "org.http4s" %% "http4s-ember-server" % http4,
+    "org.http4s" %% "http4s-dsl" % http4,
     )
   )
-
-
-
-
