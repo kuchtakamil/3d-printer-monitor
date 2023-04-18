@@ -18,7 +18,7 @@ object DeviceSimulatorProducer extends IOApp {
         if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
             println("invalid argument")
 
-        implicit lazy val simValDecoder: Encoder[SimValue] = deriveEncoder[SimValue]
+        implicit lazy val simValEncoder: Encoder[SimValue] = deriveEncoder[SimValue]
         val deviceType = args(0)
         val printer = Printer.noSpaces
         val sender = new KafkaSender
@@ -34,7 +34,7 @@ object DeviceSimulatorProducer extends IOApp {
                   generator.generate
                     .map(newVal => createObj(deviceType, newVal))
                     .map(m => printer.print(m.asJson))
-                    .flatMap(str => sender.send(deviceType, str))
+                    .flatMap(value => sender.send(deviceType, value))
                     .flatMap(_ => IO.sleep(cfg.frequency.second))
                   ).foreverM
             } yield ()

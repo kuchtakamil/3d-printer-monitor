@@ -4,18 +4,23 @@ import cats.effect.{ExitCode, IO, IOApp}
 import cats.effect.unsafe.implicits.global
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.consumer.{AutoOffsetReset, Consumer, ConsumerConfig, ConsumerRecords}
+import io.circe.Decoder
+import io.circe.parser.decode
+import io.circe.generic.semiauto.deriveDecoder
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 object KafkaConsumer extends IOApp {
 
+  implicit lazy val simValDecoder: Decoder[SimValue] = deriveDecoder[SimValue]
+
   def consumeMsg(consumer: Consumer[IO, String, String]): IO[Unit] =
-    IO.delay {
       consumer.poll(1000.millis)
-      .flatMap(records => IO(records.values.foreach(record => println(s"Consumed message: ${record.toString()}"))))
+      .flatMap(records => IO(records.values.foreach(record => println(s"\n\nConsumed message: ${record._2.flatMap(r => r.value.map(ws => ws.value))}"))))
+//      .flatMap(records => IO(records.values.foreach(record => println(decode[SimValue](record.toString())))))
+      .flatMap(_ => IO.sleep(2 seconds))
       .flatMap(_ => consumeMsg(consumer))
-    }
 
   override def run(args: List[String]): IO[ExitCode] = {
 //    val cfg: ConsumerConfig = ConsumerConfig.Default
