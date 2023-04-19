@@ -1,12 +1,16 @@
-import ConfigDomain._
+import config.model.ConfigDomain._
 import cats.Monad
 import cats.effect.{Async, ExitCode, IO, IOApp, Ref}
 import cats.effect.kernel.Resource
+import config.model.ConfigDomain
+import generator.Generator
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder, HCursor, Json, Printer}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import pureconfig._
 import pureconfig.generic.auto._
+import sender.KafkaSender
+import simulator.model.{BedTemperature, CarriageSpeed, SimValue}
 
 import scala.concurrent.duration._
 import java.time.Instant
@@ -16,7 +20,7 @@ object DeviceSimulatorProducer extends IOApp {
 
     override def run(args: List[String]): IO[ExitCode] = {
         if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
-            println("invalid argument")
+            throw new RuntimeException("invalid argument")
 
         implicit lazy val simValEncoder: Encoder[SimValue] = deriveEncoder[SimValue]
         val deviceType = args(0)

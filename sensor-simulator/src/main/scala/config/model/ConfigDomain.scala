@@ -1,3 +1,5 @@
+package config.model
+
 object ConfigDomain {
   val carriageSpeed = "carriage-speed"
   val bedTemp = "bed-temp"

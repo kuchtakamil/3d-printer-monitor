@@ -1,5 +1,7 @@
-import cats.effect.{IO, Resource}
+package sender
+
 import cats.effect.unsafe.implicits.global
+import cats.effect.{IO, Resource}
 import com.evolutiongaming.skafka.producer.{Producer, ProducerConfig, ProducerRecord, RecordMetadata}
 
 class KafkaSender {
@@ -9,7 +11,7 @@ class KafkaSender {
 
   def send(topic: String, payload: String): IO[RecordMetadata] = {
     producer.use { producer =>
-      val record = ProducerRecord(topic = topic, key = topic + "-01", value = payload)
+      val record = ProducerRecord(topic = topic, key = s"$topic-01", value = payload)
       producer.send(record).flatten
     }
   }

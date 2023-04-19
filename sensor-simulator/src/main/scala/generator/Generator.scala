@@ -1,5 +1,8 @@
-import ConfigDomain._
-import cats.effect.{Async, IO, Ref}
+package generator
+
+import cats.effect.{IO, Ref}
+import config.model.ConfigDomain
+import config.model.ConfigDomain.{ConfigPayload, Simulator, ValueRange}
 
 class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
 

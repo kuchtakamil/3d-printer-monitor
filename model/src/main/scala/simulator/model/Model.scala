@@ -1,3 +1,5 @@
+package simulator.model
+
 import java.time.Instant
 
 sealed trait SimValue
