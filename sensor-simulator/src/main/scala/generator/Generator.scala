@@ -1,8 +1,8 @@
 package generator
 
 import cats.effect.{IO, Ref}
-import config.model.ConfigDomain
-import config.model.ConfigDomain.{ConfigPayload, Simulator, ValueRange}
+import model.config.SimulatorConfig
+import model.config.SimulatorConfig._
 
 class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
 
@@ -30,8 +30,8 @@ class Generator(simulator: Simulator, deviceType: String, state: Ref[IO, Int]) {
 
   private def chooseDevice(deviceType: String, simulator: Simulator): Either[String, ConfigPayload] =
     deviceType match {
-      case ConfigDomain.carriageSpeed => Right(simulator.carriageSpeed)
-      case ConfigDomain.bedTemp  => Right(simulator.bedTemp)
+      case SimulatorConfig.carriageSpeed => Right(simulator.carriageSpeed)
+      case SimulatorConfig.bedTemp  => Right(simulator.bedTemp)
       case _ => Left("unknown device type")
     }
 

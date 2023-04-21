@@ -1,4 +1,4 @@
-package simulator.model
+package model.simulator
 
 import java.time.Instant
 

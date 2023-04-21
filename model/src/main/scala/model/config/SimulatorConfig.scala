@@ -1,6 +1,6 @@
-package config.model
+package model.config
 
-object ConfigDomain {
+object SimulatorConfig {
   val carriageSpeed = "carriage-speed"
   val bedTemp = "bed-temp"
   case class ConfigPayload(valueRange: ValueRange, validValueRange: ValueRange, initValue: Int, frequency: Int, avgDelta: Int)
