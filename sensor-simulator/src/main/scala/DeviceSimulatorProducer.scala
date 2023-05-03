@@ -17,66 +17,50 @@ import java.time.Instant
 
 object DeviceSimulatorProducer extends IOApp {
 
-    override def run(args: List[String]): IO[ExitCode] = {
-        if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
-            throw new RuntimeException("invalid argument")
+  override def run(args: List[String]): IO[ExitCode] = {
+    if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
+      throw new RuntimeException("invalid argument")
 
-        implicit lazy val simValEncoder: Encoder[SimValue] = deriveEncoder[SimValue]
-        val deviceType = args(0)
-        val printer = Printer.noSpaces
-        val sender = new KafkaSender
-
-        val program1 = for {
-            producer <- makeKafkaProducer
-            ref <- Resource.eval(Ref[IO].of(1))
-            simulator <- Resource.eval(createSimulator)
-            generator = new Generator(simulator, deviceType, ref)
-            cfg <- Resource.eval(generator.getCfgPayload)
-            _ <- Resource.eval(ref.set(cfg.initValue))
-        } yield {
-            generator.generate
-              .map(newVal => createSimValue(deviceType, newVal))
-              .map(m => printer.print(m.asJson))
-              .flatMap(value => sender.send(producer, deviceType, value))
-              .flatMap(_ => IO.sleep(cfg.frequency.second))
-        }
-        program1.useForever.as((ExitCode.Success))
-
-        val program =
-            for {
-                ref <- Ref[IO].of(1)
-                simulator <- createSimulator
-                generator = new Generator(simulator, deviceType, ref)
-                cfg <- generator.getCfgPayload
-                _ <- ref.set(cfg.initValue)
-                _ <- makeKafkaProducer.use((producer: Producer[IO]) => {
-                    for {
-                        _ <- (
-                          generator.generate
-                            .map(newVal => createSimValue(deviceType, newVal))
-                            .map(m => printer.print(m.asJson))
-                            .flatMap(value => sender.send(producer, deviceType, value))
-                            .flatMap(_ => IO.sleep(cfg.frequency.second))
-                          ).foreverM
-                    } yield ()
-                })
-            } yield ()
-        program.as(ExitCode.Success)
+    val deviceType = args(0)
+    val program1   = for {
+      producer  <- makeKafkaProducer
+      ref       <- Resource.eval(Ref[IO].of(1))
+      simulator <- Resource.eval(createSimulator)
+      generator  = Generator.of[IO](simulator, deviceType, ref)
+      cfg       <- Resource.eval(generator.getCfgPayload)
+      _         <- Resource.eval(ref.set(cfg.initValue))
+    } yield {
+      Todo(producer, generator, cfg, deviceType).foreverM
     }
+    program1.use(identity).as(ExitCode.Success)
+  }
 
-    private def createSimulator: IO[Simulator] =
-        for {
-            simulator <- IO.delay {
-                ConfigSource.default.at("simulator").load[Simulator]
-            }
-            simulator <- simulator.fold(
-        err => IO.raiseError(new RuntimeException(s"parsing failed $err")),
-        IO.pure)
-        } yield simulator
+  private def createSimulator: IO[Simulator] =
+    for {
+      simulator <- IO.delay {
+        ConfigSource.default.at("simulator").load[Simulator]
+      }
+      simulator <- simulator.fold(err => IO.raiseError(new RuntimeException(s"simulator parsing failed $err")), IO.pure)
+    } yield simulator
 
-    private def createSimValue(deviceType: String, newVal: Int): SimValue = deviceType match {
-        case SimulatorConfig.bedTemp => BedTemperature(Instant.now(), newVal)
-        case SimulatorConfig.carriageSpeed => CarriageSpeed(Instant.now(), newVal)
-        case _ => CarriageSpeed(Instant.now(), newVal)
+  private def createSimValue(deviceType: String, newVal: Int): SimValue = deviceType match {
+    case SimulatorConfig.bedTemp       => BedTemperature(Instant.now(), newVal)
+    case SimulatorConfig.carriageSpeed => CarriageSpeed(Instant.now(), newVal)
+    case _                             => CarriageSpeed(Instant.now(), newVal)
+  }
+
+  private object Todo {
+    private implicit lazy val simValEncoder: Encoder[SimValue] = deriveEncoder[SimValue]
+
+    private val printer = Printer.noSpaces
+    private val sender  = new KafkaSender
+
+    def apply(producer: Producer[IO], generator: Generator[IO], cfg: ConfigPayload, deviceType: String) = {
+      generator.generate
+        .map(newVal => createSimValue(deviceType, newVal))
+        .map(m => printer.print(m.asJson))
+        .flatMap(value => sender.send(producer, deviceType, value))
+        .flatMap(_ => IO.sleep(cfg.frequency.second))
     }
+  }
 }

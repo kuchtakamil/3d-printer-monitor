@@ -1,102 +1,139 @@
-import cats.data.{NonEmptyList, NonEmptySet}
+import cats.data.NonEmptySet
 import cats.effect.std.Queue
 import cats.effect.unsafe.implicits.global
 import cats.effect.{ExitCode, IO, IOApp}
-import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.consumer._
-import io.circe.Decoder
+import io.circe.{Decoder, Printer}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser.decode
+import io.circe.syntax._
+import io.circe.{Encoder, Printer}
 import model.config.SimulatorConfig._
-import model.simulator.SimValue
+import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import cats.implicits._
-import com.comcast.ip4s.IpLiteralSyntax
+import config.ConfigParser
 import fs2.concurrent.Topic
-import org.http4s.HttpApp
-import org.http4s.ember.server._
-import org.http4s.server.websocket.WebSocketBuilder2
+import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
+import io.circe.syntax.EncoderOps
+import model.config.ConsumerConfig.{ValidRanges, ValidValueRange}
+import model.consumer.ClassifiedValue
+import pureconfig.generic.auto._
+import sender.WebSocket.runWebSocketServer
+
+import java.time.Instant
+import scala.collection.immutable.SortedSet
 
 object KafkaConsumer extends IOApp {
 
   implicit lazy val simValDecoder: Decoder[SimValue] = deriveDecoder[SimValue]
 
   override def run(args: List[String]): IO[ExitCode] = {
-    if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
+    val argsSet: Set[String] = args(0).split(",").map(_.trim).toSet
+
+    if (args.length != 1 || !argsSet.forall(Set(carriageSpeed, bedTemp).contains))
       throw new RuntimeException("invalid argument")
 
-    val deviceType: String = args(0)
-    val consumer = Consumer.of[IO, String, String](tmpCfg)
+    val deviceTypes: NonEmptySet[String] =
+      NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get
+
+    val consumer = Consumer.of[IO, String, String](ConfigParser.customKafkaCfg)
 
     val program = consumer.use { consumer =>
       for {
-        queue <- Queue.unbounded[IO, SimValue]
-        _ <- consumer.subscribe(NonEmptySet.of(deviceType), None)
-        _ <- consumeMsg(queue, consumer).foreverM.start
-        topic <- Topic[IO, String]
-        _ <- runWebsocketServer(topic).foreverM.start
-        _ <- pushMsg(queue, topic).foreverM.start
-        // run server here?
-//        _ <- IO(println("Press enter to exit"))
-//        _ <- IO(scala.io.StdIn.readLine())
+        topic           <- Topic[IO, String]
+        webSocketCfg    <- ConfigParser.pareWebSocketConfig
+        validRanges     <- ConfigParser.pareValidRanges
+        _               <- consumer.subscribe(deviceTypes, None)
+        kafkaQueue      <- Queue.unbounded[IO, SimValue]
+        _               <- consumeMsgFromKafka(kafkaQueue, consumer).foreverM.start
+        classifiedQueue <- Queue.unbounded[IO, ClassifiedValue]
+        _               <- classify(kafkaQueue, classifiedQueue, validRanges).foreverM.start
+        printer          = Printer.noSpaces
+        _               <- pushMsg(classifiedQueue, topic, printer).foreverM.start
+        _               <- runWebSocketServer(webSocketCfg, topic).useForever
       } yield ()
     }
     program.as(ExitCode.Success)
   }
 
-  private def tmpCfg = {
-    val kafkaCommonConfig = CommonConfig.Default.copy(
-      bootstrapServers = NonEmptyList.one("localhost:9092"),
-      clientId = Some("3d-printer-client-id"))
-
-    val cfg: ConsumerConfig = ConsumerConfig.Default.copy(
-      common = kafkaCommonConfig,
-      groupId = Some("3d-printer-consumer-group"),
-      autoOffsetReset = AutoOffsetReset.Earliest)
-    cfg
-  }
-
-  def consumeMsg(queue: Queue[IO, SimValue], consumer: Consumer[IO, String, String]): IO[Unit] = {
+  private def consumeMsgFromKafka(queue: Queue[IO, SimValue], consumer: Consumer[IO, String, String]): IO[Unit] = {
     for {
-      // to be wrapped into function
-      msgsIterable <- consumer.poll(1 second).map {
-        records: ConsumerRecords[String, String] =>
-          records
-            .values
-            .values
-            .flatMap(_.toList)
-            .collect { case ConsumerRecord(_, _, _, _, Some(withSize), _) => withSize.value }
+      msgsList      <- poll(consumer)
+      msgs          <- msgsList
+        .map(msg => decode[SimValue](msg))
+        .traverse {
+          case Right(i)  => IO.pure(Option(i))
+          case Left(err) => IO.delay(println(s"Error during parsing $err")).as(None)
+        }
+        .map(list => list.collect { case Some(i) => i })
+      (csOpt, btOpt) = msgs.foldLeft((none[CarriageSpeed], none[BedTemperature]))(
+        (acc: (Option[CarriageSpeed], Option[BedTemperature]), item: SimValue) => {
+          item match {
+            case bt: BedTemperature => (acc._1, Some(bt))
+            case cs: CarriageSpeed  => (Some(cs), acc._2)
+          }
+        }
+      )
+      _             <- csOpt match {
+        case Some(v) => queue.offer(v)
+        case None    => IO.unit
       }
-      msgs <-
-        msgsIterable.toList.map(msg => decode[SimValue](msg))
-          .traverse {
-            case Right(i) => IO.pure(Some(i))
-            case Left(err) => IO.pure(println(s"Error during parsing $err")).as(None)
-          }.map(list => list.collect { case Some(i) => i })
-
-      _ <- queue.offer(msgs.last)
-      _ <- IO.sleep(1.second)
+      _             <- btOpt match {
+        case Some(v) => queue.offer(v)
+        case None    => IO.unit
+      }
+//      _             <- IO.sleep(1 second)
     } yield ()
   }
 
-  def pushMsg(queue: Queue[IO, SimValue], topic: Topic[IO, String]): IO[Unit] = for {
-    num <- queue.take
-    _   <- topic.publish ???
+  private def poll(consumer: Consumer[IO, String, String]): IO[List[String]] =
+    consumer.poll(1 second).map { records: ConsumerRecords[String, String] =>
+      records.values.values
+        .flatMap(_.toList)
+        .collect { case ConsumerRecord(_, _, _, _, Some(withSize), _) => withSize.value }
+        .toList
+    }
+
+  private def pushMsg(queue: Queue[IO, ClassifiedValue], topic: Topic[IO, String], printer: Printer): IO[Unit] =
+    for {
+      item <- queue.take
+      json  = printer.print(item.asJson)
+      _    <- IO(println(json))
+      _    <- topic.publish1(item.value.toString)
+    } yield ()
+
+  private def classify(
+    kafkaQueue: Queue[IO, SimValue],
+    classifiedQueue: Queue[IO, ClassifiedValue],
+    validRanges: ValidRanges,
+  ): IO[Unit] =
+    for {
+      simValue   <- kafkaQueue.take
+      classified <- checkIfInRange(simValue, validRanges)
+      _          <- classifiedQueue.offer(classified)
+    } yield ()
+
+  private def checkIfInRange(simValue: SimValue, validRanges: ValidRanges): IO[ClassifiedValue] = {
+    val validateValue =
+      (simValue: SimValue, validRange: ValidValueRange, consumerFn: (Instant, Int, String) => ClassifiedValue) =>
+        {
+          if (validRange.min < simValue.value && simValue.value < validRange.max)
+            IO.delay { consumerFn(simValue.updatedOn, simValue.value, "valid") }
+          else
+            IO.delay { consumerFn(simValue.updatedOn, simValue.value, "invalid") }
+        }: IO[ClassifiedValue]
+
+    simValue match {
+      case carriageSpeed: CarriageSpeed   =>
+        validateValue(carriageSpeed, validRanges.carriageSpeed.validValueRange, model.consumer.CarriageSpeed)
+      case bedTemperature: BedTemperature =>
+        validateValue(bedTemperature, validRanges.bedTemp.validValueRange, model.consumer.BedTemperature)
+    }
   }
-  yield ()
-
-  def runWebsocketServer[T](topic: Topic[IO, T]): IO[Unit] =
-    EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"127.0.0.1")
-      .withPort(port"9002")
-      .withHttpWebSocketApp(httpApp(topic))
-      .build
-
-  private def httpApp(topic: Topic[IO, String])(wsb: WebSocketBuilder2[IO]): HttpApp[IO] = {
-    myRoute(wsb) // <+> otherRoute(chatTopic)(wsb)
-  }.orNotFound
-
 }
+
+//{"CarriageSpeed":{"updatedOn":"2023-05-01T16:55:30.779685490Z","value":80,"status":"invalid"}}
+//{"BedTemperature":{"updatedOn":"2023-05-03T09:53:47.724607689Z","value":81,"status":"valid"}}

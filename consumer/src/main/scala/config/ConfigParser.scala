@@ -1,0 +1,65 @@
+package config
+
+import cats.data.NonEmptyList
+import cats.effect.IO
+import com.evolutiongaming.skafka.CommonConfig
+import com.evolutiongaming.skafka.consumer.{AutoOffsetReset, ConsumerConfig}
+import model.config.ConsumerConfig.{KafkaConfig, ValidRanges, WebSocketConfig}
+import pureconfig.ConfigReader.Result
+import pureconfig.ConfigSource
+import pureconfig.generic.auto._
+
+object ConfigParser {
+
+  def pareValidRanges: IO[ValidRanges] =
+    for {
+      validRanges <- IO.delay {
+        ConfigSource.default.at("valid-ranges").load[ValidRanges]
+      }
+      validRanges <- validRanges.fold(
+        err => IO.raiseError(new RuntimeException(s"valid ranges parsing failed $err")),
+        IO.pure,
+      )
+    } yield validRanges
+
+  def pareWebSocketConfig: IO[WebSocketConfig] =
+    for {
+      webSocketCfg <- IO.delay {
+        ConfigSource.default.at("web-socket-config").load[WebSocketConfig]
+      }
+      webSocketCfg <- webSocketCfg.fold(
+        err => IO.raiseError(new RuntimeException(s"web socket config parsing failed $err")),
+        IO.pure,
+      )
+    } yield webSocketCfg
+
+  def customKafkaCfg = {
+    val kafkaConfig: Result[KafkaConfig] = ConfigSource.default.at("kafka-config").load[KafkaConfig]
+
+    kafkaConfig match {
+      case Right(cfg) =>
+        val kafkaCommonConfig = CommonConfig.Default.copy(
+          bootstrapServers = NonEmptyList.one(s"${cfg.host}:${cfg.port}"),
+          clientId = Some("3d-printer-client-id"),
+        )
+
+        ConsumerConfig.Default.copy(
+          common = kafkaCommonConfig,
+          groupId = Some("3d-printer-consumer-group"),
+          autoOffsetReset = AutoOffsetReset.Earliest,
+        )
+
+      case Left(_) => ConsumerConfig.Default
+    }
+  }
+  //  private def parseKafkaConfig: IO[KafkaConfig] =
+  //    for {
+  //      kafkaCfg <- IO.delay {
+  //        ConfigSource.default.at("kafka-config").load[KafkaConfig]
+  //      }
+  //      kafkaCfg <- kafkaCfg.fold(
+  //        err => IO.raiseError(new RuntimeException(s"kafka config parsing failed $err")),
+  //        IO.pure)
+  //    } yield kafkaCfg
+
+}

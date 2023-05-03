@@ -5,10 +5,12 @@ import cats.effect.{IO, Resource}
 import com.evolutiongaming.skafka.producer.{Producer, ProducerConfig, ProducerRecord, RecordMetadata}
 
 class KafkaSender {
-  def send(producer: Producer[IO], topic: String, payload: String): IO[RecordMetadata] = {
-    val record = ProducerRecord(topic = topic, key = s"$topic-01", value = payload)
-    producer.send(record).flatten
-  }
+  def send(producer: Producer[IO], topic: String, payload: String): IO[RecordMetadata] =
+    producer
+      .send(
+        ProducerRecord(topic = topic, key = s"$topic-01", value = payload)
+      )
+      .flatten
 }
 
 object KafkaSender {
