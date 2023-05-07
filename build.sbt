@@ -4,14 +4,14 @@ ThisBuild / version := "1.0"
 lazy val root =
   project
     .in(file("."))
-    .aggregate(model, `sensor-simulator`, consumer)
+    .aggregate(model, `sensor-simulator`, `data-consumer`)
 
 lazy val model =
   project.in(file("model"))
 
-lazy val consumer =
+lazy val `data-consumer` =
   project
-    .in(file("consumer"))
+    .in(file("data-consumer"))
     .dependsOn(model)
     .settings(consumerDeps, commonDeps)
 
@@ -21,39 +21,40 @@ lazy val `sensor-simulator` =
     .dependsOn(model)
     .settings(producerDeps, commonDeps)
 
-lazy val skafka     = "15.0.0"
-lazy val kafkaFlow  = "2.3.1"
-lazy val http4s     = "0.23.18"
-lazy val circe      = "0.14.5"
-lazy val pureconfig = "0.17.2"
+lazy val skafkaVer     = "15.0.0"
+lazy val kafkaFlowVer  = "2.3.1"
+lazy val http4sVer     = "0.23.18"
+lazy val circeVer      = "0.14.5"
+lazy val pureconfigVer = "0.17.2"
+lazy val fs2Ver        = "3.6.1"
 
 val commonDeps   =
   Seq(
     libraryDependencies ++= Seq(
-      "com.evolutiongaming"   %% "skafka"        % skafka,
-      "com.github.pureconfig" %% "pureconfig"    % pureconfig,
-      "io.circe"              %% "circe-core"    % circe,
-      "io.circe"              %% "circe-generic" % circe,
-      "io.circe"              %% "circe-parser"  % circe,
+      "com.evolutiongaming"   %% "skafka"        % skafkaVer,
+      "com.github.pureconfig" %% "pureconfig"    % pureconfigVer,
+      "io.circe"              %% "circe-core"    % circeVer,
+      "io.circe"              %% "circe-generic" % circeVer,
+      "io.circe"              %% "circe-parser"  % circeVer,
     ),
     testFrameworks += new TestFramework("munit.Framework"),
   )
 val producerDeps =
   Seq(
     libraryDependencies ++= Seq(
-      "com.evolutiongaming" %% "skafka"   % skafka,
-      "co.fs2"              %% "fs2-core" % "3.6.1",
+      "com.evolutiongaming" %% "skafka"   % skafkaVer,
+      "co.fs2"              %% "fs2-core" % fs2Ver,
     )
   )
 
 val consumerDeps =
   Seq(
     libraryDependencies ++= Seq(
-      "com.evolutiongaming"   %% "skafka"              % skafka,
-      "com.github.pureconfig" %% "pureconfig"          % pureconfig,
-      "org.http4s"            %% "http4s-ember-client" % http4s,
-      "org.http4s"            %% "http4s-ember-server" % http4s,
-      "org.http4s"            %% "http4s-dsl"          % http4s,
-      "org.http4s"            %% "http4s-circe"        % http4s,
+      "com.evolutiongaming"   %% "skafka"              % skafkaVer,
+      "com.github.pureconfig" %% "pureconfig"          % pureconfigVer,
+      "org.http4s"            %% "http4s-ember-client" % http4sVer,
+      "org.http4s"            %% "http4s-ember-server" % http4sVer,
+      "org.http4s"            %% "http4s-dsl"          % http4sVer,
+      "org.http4s"            %% "http4s-circe"        % http4sVer,
     )
   )

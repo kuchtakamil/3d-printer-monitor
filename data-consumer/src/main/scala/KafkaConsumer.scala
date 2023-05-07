@@ -7,6 +7,8 @@ import io.circe.{Decoder, Printer}
 import io.circe.generic.semiauto.deriveDecoder
 import io.circe.parser.decode
 import io.circe.syntax._
+import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
+import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Printer}
 import model.config.SimulatorConfig._
 import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
@@ -16,8 +18,7 @@ import scala.language.postfixOps
 import cats.implicits._
 import config.ConfigParser
 import fs2.concurrent.Topic
-import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
-import io.circe.syntax.EncoderOps
+
 import model.config.ConsumerConfig.{ValidRanges, ValidValueRange}
 import model.consumer.ClassifiedValue
 import pureconfig.generic.auto._
@@ -85,7 +86,6 @@ object KafkaConsumer extends IOApp {
         case Some(v) => queue.offer(v)
         case None    => IO.unit
       }
-//      _             <- IO.sleep(1 second)
     } yield ()
   }
 
@@ -102,7 +102,7 @@ object KafkaConsumer extends IOApp {
       item <- queue.take
       json  = printer.print(item.asJson)
       _    <- IO(println(json))
-      _    <- topic.publish1(item.value.toString)
+      _    <- topic.publish1(json)
     } yield ()
 
   private def classify(

@@ -1,5 +1,6 @@
 package sender
 
+import cats.effect.std.Queue
 import cats.effect.{IO, Resource}
 
 import scala.language.postfixOps
@@ -28,9 +29,7 @@ object WebSocket {
     HttpRoutes
       .of[IO] { case GET -> Root / "simvalue" =>
         wsb.build(
-          receive = topic.publish.compose[Stream[IO, WebSocketFrame]](_.collect {
-            case WebSocketFrame.Text(message, _) => message
-          }),
+          receive = (in => in.evalMap(_ => IO.unit)),
           send = topic.subscribe(maxQueued = 10).map(WebSocketFrame.Text(_)),
         )
       }
