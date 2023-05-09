@@ -1,19 +1,16 @@
-version: "2"
+version: "3.7"
 
 services:
-  build-sensor-simulator:
+  build-3d-printer-monitor:
+    image: 3d-printer-monitor
     build:
-      context: ./sensor-simulator
-      dockerfile: sensor-simulator.dockerfile
-    image: sensor-simulator
-  build-data-consumer:
-    build:
-      context: ./data-consumer
-      dockerfile: data-consumer.dockerfile
-    image: data-consumer
+      context: .
+      dockerfile: Dockerfile
 
   zookeeper:
     image: docker.io/bitnami/zookeeper:3.8
+    networks:
+      - kafka-net
     ports:
       - "2181:2181"
     volumes:
@@ -22,8 +19,11 @@ services:
       - ALLOW_ANONYMOUS_LOGIN=yes
   kafka:
     image: docker.io/bitnami/kafka:3.4
+    networks:
+      - kafka-net
     ports:
       - "9092:9092"
+      - "9093:9093"
     volumes:
       - "kafka_data:/bitnami"
     environment:
@@ -38,6 +38,8 @@ services:
   akhq:
     container_name: akhq
     image: tchiotludo/akhq:latest
+    networks:
+      - kafka-net
     ports:
       - "8080:8080"
     environment:
@@ -51,27 +53,24 @@ services:
       - kafka
 
   carriage-speed-simulator:
-    image: sensor-simulator
-    environment:
-      - PROJECT=sensor-simulator
-      - SIMULATOR_TYPE=carriage-speed
-#    command: ["./app.sh", "carriageSpeed"]
+    image: 3d-printer-monitor
+    command: sbt "sensor-simulator / run carriage-speed"
+    networks:
+      - kafka-net
     depends_on:
       - kafka
   bed-temp-simulator:
-    image: sensor-simulator
-    environment:
-      - PROJECT=sensor-simulator
-      - SIMULATOR_TYPE=bed-temperature
-#    command: ["./app.sh", "bedTemp"]
+    image: 3d-printer-monitor
+    command: sbt "sensor-simulator / run bed-temp"
+    networks:
+      - kafka-net
     depends_on:
       - kafka
   data-consumer:
-    image: data-consumer
-    environment:
-      - PROJECT=data-consumer
-      - SIMULATOR_TYPE=carriage-speed,bed-temperature
-#    command: sbt run
+    image: 3d-printer-monitor
+    command: sbt "sensor-simulator / run bed-temp,carriage-speed"
+    networks:
+      - kafka-net
     depends_on:
       - carriage-speed-simulator
       - bed-temp-simulator
@@ -81,3 +80,8 @@ volumes:
     driver: local
   kafka_data:
     driver: local
+
+networks:
+  kafka-net:
+    name: kafka-net
+    driver: bridge

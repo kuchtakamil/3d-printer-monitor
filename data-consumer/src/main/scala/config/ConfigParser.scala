@@ -40,26 +40,16 @@ object ConfigParser {
       case Right(cfg) =>
         val kafkaCommonConfig = CommonConfig.Default.copy(
           bootstrapServers = NonEmptyList.one(s"${cfg.host}:${cfg.port}"),
-          clientId = Some("3d-printer-client-id"),
+          clientId = Some(cfg.clientId),
         )
 
         ConsumerConfig.Default.copy(
           common = kafkaCommonConfig,
-          groupId = Some("3d-printer-consumer-group"),
+          groupId = Some(cfg.groupId),
           autoOffsetReset = AutoOffsetReset.Earliest,
         )
 
       case Left(_) => ConsumerConfig.Default
     }
   }
-  //  private def parseKafkaConfig: IO[KafkaConfig] =
-  //    for {
-  //      kafkaCfg <- IO.delay {
-  //        ConfigSource.default.at("kafka-config").load[KafkaConfig]
-  //      }
-  //      kafkaCfg <- kafkaCfg.fold(
-  //        err => IO.raiseError(new RuntimeException(s"kafka config parsing failed $err")),
-  //        IO.pure)
-  //    } yield kafkaCfg
-
 }

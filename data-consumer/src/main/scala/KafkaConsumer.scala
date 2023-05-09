@@ -35,7 +35,7 @@ object KafkaConsumer extends IOApp {
     val argsSet: Set[String] = args(0).split(",").map(_.trim).toSet
 
     if (args.length != 1 || !argsSet.forall(Set(carriageSpeed, bedTemp).contains))
-      throw new RuntimeException("invalid argument")
+      throw new RuntimeException(s"invalid argument: $argsSet")
 
     val deviceTypes: NonEmptySet[String] =
       NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get

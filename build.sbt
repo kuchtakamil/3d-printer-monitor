@@ -13,12 +13,18 @@ lazy val `data-consumer` =
   project
     .in(file("data-consumer"))
     .dependsOn(model)
+    .settings(
+      Compile / mainClass := Some("KafkaConsumer")
+    )
     .settings(consumerDeps, commonDeps)
 
 lazy val `sensor-simulator` =
   project
     .in(file("sensor-simulator"))
     .dependsOn(model)
+    .settings(
+      Compile / mainClass := Some("DeviceSimulatorProducer")
+    )
     .settings(producerDeps, commonDeps)
 
 lazy val skafkaVer     = "15.0.0"

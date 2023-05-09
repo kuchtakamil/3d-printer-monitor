@@ -19,7 +19,7 @@ object DeviceSimulatorProducer extends IOApp {
 
   override def run(args: List[String]): IO[ExitCode] = {
     if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
-      throw new RuntimeException("invalid argument")
+      throw new RuntimeException(s"invalid argument: $args")
 
     val deviceType = args(0)
     val program1   = for {
