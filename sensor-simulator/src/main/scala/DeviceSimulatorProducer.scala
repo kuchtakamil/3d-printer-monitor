@@ -11,9 +11,10 @@ import pureconfig._
 import pureconfig.generic.auto._
 import sender.KafkaSender
 import sender.KafkaSender.makeKafkaProducer
-
 import scala.concurrent.duration._
-import java.time.Instant
+
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 object DeviceSimulatorProducer extends IOApp {
 
@@ -44,10 +45,13 @@ object DeviceSimulatorProducer extends IOApp {
     } yield simulator
 
   private def createSimValue(deviceType: String, newVal: Int): SimValue = deviceType match {
-    case SimulatorConfig.bedTemp       => BedTemperature(Instant.now(), newVal)
-    case SimulatorConfig.carriageSpeed => CarriageSpeed(Instant.now(), newVal)
-    case _                             => CarriageSpeed(Instant.now(), newVal)
+    case SimulatorConfig.bedTemp       => BedTemperature(now(), newVal)
+    case SimulatorConfig.carriageSpeed => CarriageSpeed(now(), newVal)
+    case _                             => CarriageSpeed(now(), newVal)
   }
+
+  private def now(): String =
+    LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
 
   private object Todo {
     private implicit lazy val simValEncoder: Encoder[SimValue] = deriveEncoder[SimValue]

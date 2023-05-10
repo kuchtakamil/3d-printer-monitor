@@ -1,14 +1,12 @@
 package model.consumer
 
-import java.time.Instant
-
 sealed trait ClassifiedValue {
-  val updatedOn: Instant
+  val updatedOn: String
   val value: Int
   val status: String
 }
-case class CarriageSpeed(updatedOn: Instant, value: Int, status: String)  extends ClassifiedValue
-case class BedTemperature(updatedOn: Instant, value: Int, status: String) extends ClassifiedValue
+case class CarriageSpeed(updatedOn: String, value: Int, status: String)  extends ClassifiedValue
+case class BedTemperature(updatedOn: String, value: Int, status: String) extends ClassifiedValue
 
 sealed abstract class Status(name: String)
 class Valid   extends Status("valid")

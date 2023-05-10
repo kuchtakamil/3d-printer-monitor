@@ -24,7 +24,6 @@ import model.consumer.ClassifiedValue
 import pureconfig.generic.auto._
 import sender.WebSocket.runWebSocketServer
 
-import java.time.Instant
 import scala.collection.immutable.SortedSet
 
 object KafkaConsumer extends IOApp {
@@ -118,7 +117,7 @@ object KafkaConsumer extends IOApp {
 
   private def checkIfInRange(simValue: SimValue, validRanges: ValidRanges): IO[ClassifiedValue] = {
     val validateValue =
-      (simValue: SimValue, validRange: ValidValueRange, consumerFn: (Instant, Int, String) => ClassifiedValue) =>
+      (simValue: SimValue, validRange: ValidValueRange, consumerFn: (String, Int, String) => ClassifiedValue) =>
         {
           if (validRange.min < simValue.value && simValue.value < validRange.max)
             IO.delay { consumerFn(simValue.updatedOn, simValue.value, "valid") }
@@ -134,6 +133,3 @@ object KafkaConsumer extends IOApp {
     }
   }
 }
-
-//{"CarriageSpeed":{"updatedOn":"2023-05-01T16:55:30.779685490Z","value":80,"status":"invalid"}}
-//{"BedTemperature":{"updatedOn":"2023-05-03T09:53:47.724607689Z","value":81,"status":"valid"}}
