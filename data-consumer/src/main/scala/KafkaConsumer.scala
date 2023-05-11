@@ -9,7 +9,6 @@ import io.circe.parser.decode
 import io.circe.syntax._
 import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
 import io.circe.syntax.EncoderOps
-import io.circe.{Encoder, Printer}
 import model.config.SimulatorConfig._
 import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
 
@@ -34,7 +33,7 @@ object KafkaConsumer extends IOApp {
     val argsSet: Set[String] = args(0).split(",").map(_.trim).toSet
 
     if (args.length != 1 || !argsSet.forall(Set(carriageSpeed, bedTemp).contains))
-      throw new RuntimeException(s"invalid argument: $argsSet")
+      throw new RuntimeException(s"consumer invalid argument: $argsSet")
 
     val deviceTypes: NonEmptySet[String] =
       NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get

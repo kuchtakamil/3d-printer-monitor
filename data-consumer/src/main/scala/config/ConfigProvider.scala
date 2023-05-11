@@ -11,7 +11,7 @@ import pureconfig.generic.auto._
 
 object ConfigParser {
 
-  def pareValidRanges: IO[ValidRanges] =
+  def validRanges: IO[ValidRanges] =
     for {
       validRanges <- IO.delay {
         ConfigSource.default.at("valid-ranges").load[ValidRanges]
@@ -22,7 +22,7 @@ object ConfigParser {
       )
     } yield validRanges
 
-  def pareWebSocketConfig: IO[WebSocketConfig] =
+  def webSocketCfg: IO[WebSocketConfig] =
     for {
       webSocketCfg <- IO.delay {
         ConfigSource.default.at("web-socket-config").load[WebSocketConfig]

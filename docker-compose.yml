@@ -68,7 +68,9 @@ services:
       - kafka
   data-consumer:
     image: 3d-printer-monitor
-    command: sbt "sensor-simulator / run bed-temp,carriage-speed"
+    command: sbt "data-consumer / run bed-temp,carriage-speed"
+    ports:
+      - "9000:9000"
     networks:
       - kafka-net
     depends_on:

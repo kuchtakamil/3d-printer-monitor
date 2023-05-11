@@ -1,12 +1,10 @@
 package sender
 
-import cats.effect.std.Queue
 import cats.effect.{IO, Resource}
 
 import scala.language.postfixOps
 import com.comcast.ip4s.{Host, IpLiteralSyntax, Port}
 import fs2.concurrent.Topic
-import fs2.Stream
 import model.config.ConsumerConfig.WebSocketConfig
 import org.http4s.ember.server._
 import org.http4s.dsl.io._
