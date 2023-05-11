@@ -15,7 +15,7 @@ import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import cats.implicits._
-import config.ConfigParser
+import config.ConfigProvider
 import fs2.concurrent.Topic
 
 import model.config.ConsumerConfig.{ValidRanges, ValidValueRange}
@@ -38,13 +38,13 @@ object KafkaConsumer extends IOApp {
     val deviceTypes: NonEmptySet[String] =
       NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get
 
-    val consumer = Consumer.of[IO, String, String](ConfigParser.customKafkaCfg)
+    val consumer = Consumer.of[IO, String, String](ConfigProvider.customKafkaCfg)
 
     val program = consumer.use { consumer =>
       for {
         topic           <- Topic[IO, String]
-        webSocketCfg    <- ConfigParser.pareWebSocketConfig
-        validRanges     <- ConfigParser.pareValidRanges
+        webSocketCfg    <- ConfigProvider.webSocketCfg
+        validRanges     <- ConfigProvider.validRanges
         _               <- consumer.subscribe(deviceTypes, None)
         kafkaQueue      <- Queue.unbounded[IO, SimValue]
         _               <- consumeMsgFromKafka(kafkaQueue, consumer).foreverM.start

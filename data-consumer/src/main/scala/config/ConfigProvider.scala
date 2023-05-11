@@ -9,7 +9,7 @@ import pureconfig.ConfigReader.Result
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
 
-object ConfigParser {
+object ConfigProvider {
 
   def validRanges: IO[ValidRanges] =
     for {
@@ -42,14 +42,12 @@ object ConfigParser {
           bootstrapServers = NonEmptyList.one(s"${cfg.host}:${cfg.port}"),
           clientId = Some(cfg.clientId),
         )
-
         ConsumerConfig.Default.copy(
           common = kafkaCommonConfig,
           groupId = Some(cfg.groupId),
           autoOffsetReset = AutoOffsetReset.Earliest,
         )
-
-      case Left(_) => ConsumerConfig.Default
+      case Left(_)    => ConsumerConfig.Default
     }
   }
 }

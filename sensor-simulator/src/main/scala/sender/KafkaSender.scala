@@ -1,10 +1,9 @@
 package sender
 
-import cats.data.NonEmptyList
 import cats.effect.unsafe.implicits.global
 import cats.effect.{IO, Resource}
-import com.evolutiongaming.skafka.CommonConfig
-import com.evolutiongaming.skafka.producer.{Producer, ProducerConfig, ProducerRecord, RecordMetadata}
+import com.evolutiongaming.skafka.producer.{Producer, ProducerRecord, RecordMetadata}
+import config.ConfigProvider
 
 class KafkaSender {
   def send(producer: Producer[IO], topic: String, payload: String): IO[RecordMetadata] =
@@ -16,14 +15,6 @@ class KafkaSender {
 }
 
 object KafkaSender {
-  def makeKafkaProducer(): Resource[IO, Producer[IO]] = {
-    val kafkaCommonConfig = CommonConfig.Default.copy(
-      bootstrapServers = NonEmptyList.one("kafka:9093")
-    )
-
-    val cfg = ProducerConfig.Default.copy(
-      common = kafkaCommonConfig
-    )
-    Producer.of[IO](cfg)
-  }
+  def makeKafkaProducer(): Resource[IO, Producer[IO]] =
+    Producer.of[IO](ConfigProvider.customKafkaCfg)
 }

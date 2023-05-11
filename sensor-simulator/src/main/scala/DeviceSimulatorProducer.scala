@@ -1,5 +1,6 @@
 import cats.effect.{Async, ExitCode, IO, IOApp, Ref, Resource}
 import com.evolutiongaming.skafka.producer.Producer
+import config.ConfigProvider
 import generator.Generator
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
@@ -11,8 +12,8 @@ import pureconfig._
 import pureconfig.generic.auto._
 import sender.KafkaSender
 import sender.KafkaSender.makeKafkaProducer
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -26,9 +27,9 @@ object DeviceSimulatorProducer extends IOApp {
     val program1   = for {
       producer  <- makeKafkaProducer
       ref       <- Resource.eval(Ref[IO].of(1))
-      simulator <- Resource.eval(createSimulator)
+      simulator <- Resource.eval(ConfigProvider.simulator[IO])
       generator  = Generator.of[IO](simulator, deviceType, ref)
-      cfg       <- Resource.eval(generator.getCfgPayload)
+      cfg       <- Resource.eval(ConfigProvider.cfgPayload[IO])
       _         <- Resource.eval(ref.set(cfg.initValue))
     } yield {
       Todo(producer, generator, cfg, deviceType).foreverM
@@ -36,15 +37,7 @@ object DeviceSimulatorProducer extends IOApp {
     program1.use(identity).as(ExitCode.Success)
   }
 
-  private def createSimulator: IO[Simulator] =
-    for {
-      simulator <- IO.delay {
-        ConfigSource.default.at("simulator").load[Simulator]
-      }
-      simulator <- simulator.fold(err => IO.raiseError(new RuntimeException(s"simulator parsing failed $err")), IO.pure)
-    } yield simulator
-
-  private def createSimValue(deviceType: String, newVal: Int): SimValue = deviceType match {
+  private def simValue(deviceType: String, newVal: Int): SimValue = deviceType match {
     case SimulatorConfig.bedTemp       => BedTemperature(now(), newVal)
     case SimulatorConfig.carriageSpeed => CarriageSpeed(now(), newVal)
     case _                             => CarriageSpeed(now(), newVal)
@@ -61,7 +54,7 @@ object DeviceSimulatorProducer extends IOApp {
 
     def apply(producer: Producer[IO], generator: Generator[IO], cfg: ConfigPayload, deviceType: String) = {
       generator.generate
-        .map(newVal => createSimValue(deviceType, newVal))
+        .map(newVal => simValue(deviceType, newVal))
         .map(m => printer.print(m.asJson))
         .flatMap(value => sender.send(producer, deviceType, value))
         .flatMap(_ => IO.sleep(cfg.frequency.second))
