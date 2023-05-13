@@ -43,8 +43,8 @@ object KafkaConsumer extends IOApp {
     val program = consumer.use { consumer =>
       for {
         topic           <- Topic[IO, String]
-        webSocketCfg    <- ConfigProvider.webSocketCfg
-        validRanges     <- ConfigProvider.validRanges
+        webSocketCfg    <- ConfigProvider.webSocketCfg[IO]
+        validRanges     <- ConfigProvider.validRanges[IO]
         _               <- consumer.subscribe(deviceTypes, None)
         kafkaQueue      <- Queue.unbounded[IO, SimValue]
         _               <- consumeMsgFromKafka(kafkaQueue, consumer).foreverM.start

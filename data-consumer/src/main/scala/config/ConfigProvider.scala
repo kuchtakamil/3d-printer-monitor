@@ -1,7 +1,9 @@
 package config
 
 import cats.data.NonEmptyList
+import cats.syntax.all._
 import cats.effect.IO
+import cats.effect.kernel.Async
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.consumer.{AutoOffsetReset, ConsumerConfig}
 import model.config.ConsumerConfig.{KafkaConfig, ValidRanges, WebSocketConfig}
@@ -11,25 +13,25 @@ import pureconfig.generic.auto._
 
 object ConfigProvider {
 
-  def validRanges: IO[ValidRanges] =
+  def validRanges[F[_]: Async]: F[ValidRanges] =
     for {
-      validRanges <- IO.delay {
+      validRanges <- Async[F].delay {
         ConfigSource.default.at("valid-ranges").load[ValidRanges]
       }
       validRanges <- validRanges.fold(
-        err => IO.raiseError(new RuntimeException(s"valid ranges parsing failed $err")),
-        IO.pure,
+        err => Async[F].raiseError(new RuntimeException(s"valid ranges parsing failed $err")),
+        Async[F].pure,
       )
     } yield validRanges
 
-  def webSocketCfg: IO[WebSocketConfig] =
+  def webSocketCfg[F[_]: Async]: F[WebSocketConfig] =
     for {
-      webSocketCfg <- IO.delay {
+      webSocketCfg <- Async[F].delay {
         ConfigSource.default.at("web-socket-config").load[WebSocketConfig]
       }
       webSocketCfg <- webSocketCfg.fold(
-        err => IO.raiseError(new RuntimeException(s"web socket config parsing failed $err")),
-        IO.pure,
+        err => Async[F].raiseError(new RuntimeException(s"web socket config parsing failed $err")),
+        Async[F].pure,
       )
     } yield webSocketCfg
 

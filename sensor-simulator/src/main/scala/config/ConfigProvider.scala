@@ -1,8 +1,8 @@
 package config
 
 import cats.data.NonEmptyList
-import cats.effect.IO
 import cats.effect.kernel.Async
+import cats.syntax.all._
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.producer.ProducerConfig
 import model.config.ConsumerConfig.KafkaConfig
@@ -36,8 +36,8 @@ object ConfigProvider {
         ConfigSource.default.at("simulator").load[Simulator]
       }
       simulator <- simulator.fold(
-        err => IO.raiseError(new RuntimeException(s"simulator parsing failed $err")),
-        Async[F].pure(),
+        err => Async[F].raiseError(new RuntimeException(s"simulator parsing failed $err")),
+        Async[F].pure,
       )
     } yield simulator
 
