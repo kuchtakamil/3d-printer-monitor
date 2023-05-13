@@ -70,7 +70,7 @@ services:
     image: 3d-printer-monitor
     command: sbt "data-consumer / run bed-temp,carriage-speed"
     ports:
-      - "9000:9000"
+      - "127.0.0.1:9000:9000"
     networks:
       - kafka-net
     depends_on:
