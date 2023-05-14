@@ -1,5 +1,6 @@
 ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "1.0"
+ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
 
 lazy val root =
   project

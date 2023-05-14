@@ -1,4 +1,4 @@
-import cats.effect.{Async, ExitCode, IO, IOApp, Ref, Resource}
+import cats.effect.{ExitCode, IO, IOApp, Ref, Resource}
 import com.evolutiongaming.skafka.producer.Producer
 import config.ConfigProvider
 import generator.Generator
@@ -12,7 +12,7 @@ import pureconfig._
 import pureconfig.generic.auto._
 import sender.KafkaSender
 import sender.KafkaSender.makeKafkaProducer
-
+import cats.syntax.all._
 import scala.concurrent.duration._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -29,7 +29,7 @@ object DeviceSimulatorProducer extends IOApp {
       ref       <- Resource.eval(Ref[IO].of(1))
       simulator <- Resource.eval(ConfigProvider.simulator[IO])
       generator  = Generator.of[IO](simulator, deviceType, ref)
-      cfg       <- Resource.eval(ConfigProvider.cfgPayload[IO])
+      cfg       <- Resource.eval(ConfigProvider.cfgPayload[IO](simulator, deviceType))
       _         <- Resource.eval(ref.set(cfg.initValue))
     } yield {
       Todo(producer, generator, cfg, deviceType).foreverM

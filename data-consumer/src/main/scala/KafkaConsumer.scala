@@ -17,11 +17,9 @@ import scala.language.postfixOps
 import cats.implicits._
 import config.ConfigProvider
 import fs2.concurrent.Topic
-
 import model.config.ConsumerConfig.{ValidRanges, ValidValueRange}
 import model.consumer.ClassifiedValue
-import pureconfig.generic.auto._
-import sender.WebSocket.runWebSocketServer
+import sender.WebSocket
 
 import scala.collection.immutable.SortedSet
 
@@ -38,7 +36,8 @@ object KafkaConsumer extends IOApp {
     val deviceTypes: NonEmptySet[String] =
       NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get
 
-    val consumer = Consumer.of[IO, String, String](ConfigProvider.customKafkaCfg)
+    val consumer        = Consumer.of[IO, String, String](ConfigProvider.customKafkaCfg)
+    val webSocketServer = WebSocket.of[IO]
 
     val program = consumer.use { consumer =>
       for {
@@ -52,7 +51,7 @@ object KafkaConsumer extends IOApp {
         _               <- classify(kafkaQueue, classifiedQueue, validRanges).foreverM.start
         printer          = Printer.noSpaces
         _               <- pushMsg(classifiedQueue, topic, printer).foreverM.start
-        _               <- runWebSocketServer(webSocketCfg, topic).useForever
+        _               <- webSocketServer.runWebSocketServer(webSocketCfg, topic).useForever
       } yield ()
     }
     program.as(ExitCode.Success)
@@ -100,7 +99,7 @@ object KafkaConsumer extends IOApp {
       item <- queue.take
       json  = printer.print(item.asJson)
       _    <- IO(println(json))
-      _    <- topic.publish1(json)
+      _    <- IO(topic.publish1(json))
     } yield ()
 
   private def classify(
