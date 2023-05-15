@@ -17,7 +17,7 @@ import scala.language.postfixOps
 import cats.implicits._
 import config.ConfigProvider
 import fs2.concurrent.Topic
-import model.config.ConsumerConfig.{ValidRanges, ValidValueRange}
+import model.config.DataConsumerConfig.{ValidRanges, ValidValueRange}
 import model.consumer.ClassifiedValue
 import sender.WebSocket
 
@@ -99,7 +99,7 @@ object KafkaConsumer extends IOApp {
       item <- queue.take
       json  = printer.print(item.asJson)
       _    <- IO(println(json))
-      _    <- IO(topic.publish1(json))
+      _    <- topic.publish1(json)
     } yield ()
 
   private def classify(

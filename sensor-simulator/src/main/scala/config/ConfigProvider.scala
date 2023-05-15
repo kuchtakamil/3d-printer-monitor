@@ -5,9 +5,8 @@ import cats.effect.kernel.Async
 import cats.syntax.all._
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.producer.ProducerConfig
-import model.config.ConsumerConfig.KafkaConfig
 import model.config.SimulatorConfig
-import model.config.SimulatorConfig.{ConfigPayload, Simulator}
+import model.config.SimulatorConfig.{ConfigPayload, KafkaConfig, Simulator}
 import pureconfig.ConfigReader.Result
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
@@ -15,13 +14,13 @@ import pureconfig.generic.auto._
 object ConfigProvider {
 
   def customKafkaCfg: ProducerConfig = {
-    val kafkaConfig: Result[KafkaConfig] = ConfigSource.default.at("kafka-config").load[KafkaConfig]
+    val kafkaConfig: Result[KafkaConfig] =
+      ConfigSource.default.at("simulator-kafka-config").load[KafkaConfig]
 
     kafkaConfig match {
       case Right(cfg) =>
         val kafkaCommonConfig = CommonConfig.Default.copy(
-          bootstrapServers = NonEmptyList.one(s"${cfg.host}:${cfg.port}"),
-          clientId = Some(cfg.clientId),
+          bootstrapServers = NonEmptyList.one(s"${cfg.host}:${cfg.port}")
         )
         ProducerConfig.Default.copy(
           common = kafkaCommonConfig

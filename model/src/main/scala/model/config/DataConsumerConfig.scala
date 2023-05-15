@@ -1,6 +1,6 @@
 package model.config
 
-object ConsumerConfig {
+object DataConsumerConfig {
   val carriageSpeed = "carriage-speed"
   val bedTemp       = "bed-temp"
   case class WebSocketConfig(host: String, port: String)

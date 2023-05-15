@@ -7,7 +7,7 @@ import cats.syntax.all._
 import scala.language.postfixOps
 import com.comcast.ip4s.{Host, IpLiteralSyntax, Port}
 import fs2.concurrent.Topic
-import model.config.ConsumerConfig.WebSocketConfig
+import model.config.DataConsumerConfig.WebSocketConfig
 import org.http4s.ember.server._
 import org.http4s.dsl.io._
 import org.http4s.implicits._

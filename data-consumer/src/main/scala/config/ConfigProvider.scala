@@ -2,11 +2,10 @@ package config
 
 import cats.data.NonEmptyList
 import cats.syntax.all._
-import cats.effect.IO
 import cats.effect.kernel.Async
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.consumer.{AutoOffsetReset, ConsumerConfig}
-import model.config.ConsumerConfig.{KafkaConfig, ValidRanges, WebSocketConfig}
+import model.config.DataConsumerConfig.{KafkaConfig, ValidRanges, WebSocketConfig}
 import pureconfig.ConfigReader.Result
 import pureconfig.ConfigSource
 import pureconfig.generic.auto._
@@ -36,7 +35,7 @@ object ConfigProvider {
     } yield webSocketCfg
 
   def customKafkaCfg = {
-    val kafkaConfig: Result[KafkaConfig] = ConfigSource.default.at("kafka-config").load[KafkaConfig]
+    val kafkaConfig: Result[KafkaConfig] = ConfigSource.default.at("data-consumer-kafka-config").load[KafkaConfig]
 
     kafkaConfig match {
       case Right(cfg) =>

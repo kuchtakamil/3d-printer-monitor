@@ -10,6 +10,8 @@ object SimulatorConfig {
     frequency: Int,
     avgDelta: Int,
   )
+
+  case class KafkaConfig(host: String, port: String)
   case class ValueRange(min: Int, max: Int)
   case class Simulator(carriageSpeed: ConfigPayload, bedTemp: ConfigPayload)
 }
