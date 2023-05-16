@@ -11,10 +11,15 @@ trait Generator[F[_]] {
 }
 
 object Generator {
-  def of[F[_]: Async](simulator: Simulator, deviceType: String, state: Ref[F, Int]): Generator[F] = new Generator[F] {
+  def of[F[_]: Async](
+    simulator: Simulator,
+    configProvider: ConfigProvider[F],
+    deviceType: String,
+    state: Ref[F, Int],
+  ): Generator[F] = new Generator[F] {
     def generate: F[Int] =
       for {
-        cfgPayload <- ConfigProvider.cfgPayload(simulator, deviceType)
+        cfgPayload <- configProvider.cfgPayload(simulator, deviceType)
         newVal     <- getValueInRangeWithDelta(cfgPayload.valueRange, cfgPayload.avgDelta)
       } yield newVal
 

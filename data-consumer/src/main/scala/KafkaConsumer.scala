@@ -36,14 +36,15 @@ object KafkaConsumer extends IOApp {
     val deviceTypes: NonEmptySet[String] =
       NonEmptySet.fromSet(SortedSet.empty[String] ++ argsSet).get
 
-    val consumer        = Consumer.of[IO, String, String](ConfigProvider.customKafkaCfg)
-    val webSocketServer = WebSocket.of[IO]
+    val configProvider  = ConfigProvider.make[IO]
+    val webSocketServer = WebSocket.make[IO]
+    val consumer        = Consumer.of[IO, String, String](configProvider.customKafkaCfg)
 
     val program = consumer.use { consumer =>
       for {
         topic           <- Topic[IO, String]
-        webSocketCfg    <- ConfigProvider.webSocketCfg[IO]
-        validRanges     <- ConfigProvider.validRanges[IO]
+        webSocketCfg    <- configProvider.webSocketCfg
+        validRanges     <- configProvider.validRanges
         _               <- consumer.subscribe(deviceTypes, None)
         kafkaQueue      <- Queue.unbounded[IO, SimValue]
         _               <- consumeMsgFromKafka(kafkaQueue, consumer).foreverM.start
@@ -59,15 +60,15 @@ object KafkaConsumer extends IOApp {
 
   private def consumeMsgFromKafka(queue: Queue[IO, SimValue], consumer: Consumer[IO, String, String]): IO[Unit] = {
     for {
-      msgsList      <- poll(consumer)
-      msgs          <- msgsList
+      msgsString    <- poll(consumer)
+      msgsSimValue  <- msgsString
         .map(msg => decode[SimValue](msg))
         .traverse {
           case Right(i)  => IO.pure(Option(i))
           case Left(err) => IO.delay(println(s"Error during parsing $err")).as(None)
         }
         .map(list => list.collect { case Some(i) => i })
-      (csOpt, btOpt) = msgs.foldLeft((none[CarriageSpeed], none[BedTemperature]))(
+      (csOpt, btOpt) = msgsSimValue.foldLeft((none[CarriageSpeed], none[BedTemperature]))(
         (acc: (Option[CarriageSpeed], Option[BedTemperature]), item: SimValue) => {
           item match {
             case bt: BedTemperature => (acc._1, Some(bt))

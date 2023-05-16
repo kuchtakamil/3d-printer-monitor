@@ -23,13 +23,15 @@ object DeviceSimulatorProducer extends IOApp {
     if (args.length != 1 || !List(carriageSpeed, bedTemp).contains(args(0)))
       throw new RuntimeException(s"producer invalid argument: $args")
 
-    val deviceType = args(0)
-    val program1   = for {
-      producer  <- makeKafkaProducer
+    val deviceType     = args(0)
+    val configProvider = ConfigProvider.make[IO]
+
+    val program1 = for {
+      producer  <- makeKafkaProducer(configProvider)
       ref       <- Resource.eval(Ref[IO].of(1))
-      simulator <- Resource.eval(ConfigProvider.simulator[IO])
-      generator  = Generator.of[IO](simulator, deviceType, ref)
-      cfg       <- Resource.eval(ConfigProvider.cfgPayload[IO](simulator, deviceType))
+      simulator <- Resource.eval(configProvider.simulator)
+      generator  = Generator.of[IO](simulator, configProvider, deviceType, ref)
+      cfg       <- Resource.eval(configProvider.cfgPayload(simulator, deviceType))
       _         <- Resource.eval(ref.set(cfg.initValue))
     } yield {
       Todo(producer, generator, cfg, deviceType).foreverM

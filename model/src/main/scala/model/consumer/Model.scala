@@ -7,7 +7,3 @@ sealed trait ClassifiedValue {
 }
 case class CarriageSpeed(updatedOn: String, value: Int, status: String)  extends ClassifiedValue
 case class BedTemperature(updatedOn: String, value: Int, status: String) extends ClassifiedValue
-
-sealed abstract class Status(name: String)
-class Valid   extends Status("valid")
-class Invalid extends Status("invalid")

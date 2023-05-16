@@ -22,7 +22,7 @@ trait WebSocket[F[_]] {
 
 object WebSocket {
 
-  def of[F[_]: Async]: WebSocket[F] = new WebSocket[F] {
+  def make[F[_]: Async]: WebSocket[F] = new WebSocket[F] {
     override def runWebSocketServer(websocketCfg: WebSocketConfig, topic: Topic[F, String]): Resource[F, Server] =
       EmberServerBuilder
         .default[F]
