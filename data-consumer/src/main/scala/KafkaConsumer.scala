@@ -10,7 +10,7 @@ import io.circe.syntax._
 import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
 import io.circe.syntax.EncoderOps
 import model.config.SimulatorConfig._
-import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
+import model.simulator.SimulatorModel.{BedTemperature, CarriageSpeed, SimValue}
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -18,7 +18,7 @@ import cats.implicits._
 import config.ConfigProvider
 import fs2.concurrent.Topic
 import model.config.DataConsumerConfig.{ValidRanges, ValidValueRange}
-import model.consumer.ClassifiedValue
+import model.consumer.ConsumerModel.ClassifiedValue
 import sender.WebSocket
 
 import scala.collection.immutable.SortedSet
@@ -112,9 +112,9 @@ object KafkaConsumer extends IOApp {
 
     simValue match {
       case carriageSpeed: CarriageSpeed   =>
-        validateValue(carriageSpeed, validRanges.carriageSpeed.validValueRange, model.consumer.CarriageSpeed)
+        validateValue(carriageSpeed, validRanges.carriageSpeed.validValueRange, model.consumer.ConsumerModel.CarriageSpeed)
       case bedTemperature: BedTemperature =>
-        validateValue(bedTemperature, validRanges.bedTemp.validValueRange, model.consumer.BedTemperature)
+        validateValue(bedTemperature, validRanges.bedTemp.validValueRange, model.consumer.ConsumerModel.BedTemperature)
     }
   }
 }

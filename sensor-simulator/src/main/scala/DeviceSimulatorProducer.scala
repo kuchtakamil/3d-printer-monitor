@@ -8,7 +8,7 @@ import io.circe.{Encoder, Printer}
 import io.circe.generic.semiauto.deriveEncoder
 import model.config.SimulatorConfig
 import model.config.SimulatorConfig._
-import model.simulator.{BedTemperature, CarriageSpeed, SimValue}
+import model.simulator.SimulatorModel.{BedTemperature, CarriageSpeed, SimValue}
 import pureconfig._
 import pureconfig.generic.auto._
 import sender.KafkaSender
