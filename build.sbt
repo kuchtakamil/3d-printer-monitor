@@ -1,6 +1,11 @@
 ThisBuild / scalaVersion := "2.13.10"
 ThisBuild / version := "1.0"
 ThisBuild / scalafixDependencies += "com.github.liancheng" %% "organize-imports" % "0.6.0"
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / scalacOptions ++= List(
+  "-Wunused"
+)
 
 lazy val root =
   project

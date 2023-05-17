@@ -1,20 +1,17 @@
 package sender
 
-import cats.effect.kernel.Async
 import cats.effect.Resource
-import cats.syntax.all._
-
-import scala.language.postfixOps
+import cats.effect.kernel.Async
 import com.comcast.ip4s.{Host, IpLiteralSyntax, Port}
 import fs2.concurrent.Topic
 import model.config.DataConsumerConfig.WebSocketConfig
-import org.http4s.ember.server._
+import org.http4s._
 import org.http4s.dsl.io._
+import org.http4s.ember.server._
 import org.http4s.implicits._
 import org.http4s.server.Server
 import org.http4s.server.websocket.WebSocketBuilder2
 import org.http4s.websocket.WebSocketFrame
-import org.http4s._
 
 trait WebSocket[F[_]] {
   def runWebSocketServer(websocketCfg: WebSocketConfig, topic: Topic[F, String]): Resource[F, Server]

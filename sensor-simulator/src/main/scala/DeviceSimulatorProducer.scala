@@ -1,22 +1,20 @@
 import cats.effect.unsafe.implicits.global
 import cats.effect.{ExitCode, IO, IOApp, Ref, Resource}
+import cats.syntax.all._
 import com.evolutiongaming.skafka.producer.Producer
 import config.ConfigProvider
 import generator.Generator
+import io.circe.generic.semiauto.deriveEncoder
 import io.circe.syntax._
 import io.circe.{Encoder, Printer}
-import io.circe.generic.semiauto.deriveEncoder
 import model.config.SimulatorConfig
 import model.config.SimulatorConfig._
 import model.simulator.SimulatorModel.{BedTemperature, CarriageSpeed, SimValue}
-import pureconfig._
-import pureconfig.generic.auto._
 import sender.KafkaSender
-import cats.syntax.all._
 
-import scala.concurrent.duration._
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import scala.concurrent.duration._
 
 object DeviceSimulatorProducer extends IOApp {
 

@@ -1,8 +1,8 @@
 package config
 
 import cats.data.NonEmptyList
-import cats.syntax.all._
 import cats.effect.kernel.Async
+import cats.syntax.all._
 import com.evolutiongaming.skafka.CommonConfig
 import com.evolutiongaming.skafka.consumer.{AutoOffsetReset, ConsumerConfig}
 import model.config.DataConsumerConfig.{KafkaConfig, ValidRanges, WebSocketConfig}

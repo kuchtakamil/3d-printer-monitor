@@ -2,26 +2,24 @@ import cats.data.NonEmptySet
 import cats.effect.std.Queue
 import cats.effect.unsafe.implicits.global
 import cats.effect.{ExitCode, IO, IOApp}
-import com.evolutiongaming.skafka.consumer._
-import io.circe.{Decoder, Printer}
-import io.circe.generic.semiauto.deriveDecoder
-import io.circe.parser.decode
-import io.circe.syntax._
-import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
-import io.circe.syntax.EncoderOps
-import model.config.SimulatorConfig._
-import model.simulator.SimulatorModel.{BedTemperature, CarriageSpeed, SimValue}
-
-import scala.concurrent.duration.DurationInt
-import scala.language.postfixOps
 import cats.implicits._
+import com.evolutiongaming.skafka.consumer._
 import config.ConfigProvider
 import fs2.concurrent.Topic
+import io.circe.generic.encoding.DerivedAsObjectEncoder.deriveEncoder
+import io.circe.generic.semiauto.deriveDecoder
+import io.circe.parser.decode
+import io.circe.syntax.EncoderOps
+import io.circe.{Decoder, Printer}
 import model.config.DataConsumerConfig.{ValidRanges, ValidValueRange}
+import model.config.SimulatorConfig._
 import model.consumer.ConsumerModel.ClassifiedValue
+import model.simulator.SimulatorModel.{BedTemperature, CarriageSpeed, SimValue}
 import sender.WebSocket
 
 import scala.collection.immutable.SortedSet
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 
 object KafkaConsumer extends IOApp {
 
@@ -112,7 +110,11 @@ object KafkaConsumer extends IOApp {
 
     simValue match {
       case carriageSpeed: CarriageSpeed   =>
-        validateValue(carriageSpeed, validRanges.carriageSpeed.validValueRange, model.consumer.ConsumerModel.CarriageSpeed)
+        validateValue(
+          carriageSpeed,
+          validRanges.carriageSpeed.validValueRange,
+          model.consumer.ConsumerModel.CarriageSpeed,
+        )
       case bedTemperature: BedTemperature =>
         validateValue(bedTemperature, validRanges.bedTemp.validValueRange, model.consumer.ConsumerModel.BedTemperature)
     }

@@ -1,9 +1,8 @@
 package generator
-import cats.syntax.all._
-import cats.effect.kernel.Async
 import cats.effect.Ref
+import cats.effect.kernel.Async
+import cats.syntax.all._
 import config.ConfigProvider
-import model.config.SimulatorConfig
 import model.config.SimulatorConfig._
 
 trait Generator[F[_]] {
