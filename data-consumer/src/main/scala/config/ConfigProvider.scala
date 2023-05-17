@@ -53,7 +53,7 @@ object ConfigProvider {
           ConsumerConfig.Default.copy(
             common = kafkaCommonConfig,
             groupId = Some(cfg.groupId),
-            autoOffsetReset = AutoOffsetReset.Earliest,
+            autoOffsetReset = AutoOffsetReset.Latest,
           )
         case Left(_)    => ConsumerConfig.Default
       }

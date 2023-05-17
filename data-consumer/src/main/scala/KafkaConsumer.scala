@@ -58,33 +58,19 @@ object KafkaConsumer extends IOApp {
     program.as(ExitCode.Success)
   }
 
-  private def consumeMsgFromKafka(queue: Queue[IO, SimValue], consumer: Consumer[IO, String, String]): IO[Unit] = {
-    for {
-      msgsString    <- poll(consumer)
-      msgsSimValue  <- msgsString
-        .map(msg => decode[SimValue](msg))
-        .traverse {
-          case Right(i)  => IO.pure(Option(i))
-          case Left(err) => IO.delay(println(s"Error during parsing $err")).as(None)
+  def consumeMsgFromKafka(queue: Queue[IO, SimValue], consumer: Consumer[IO, String, String]): IO[Unit] = {
+    poll(consumer)
+      .flatMap { msgList =>
+        msgList.traverse_ { msg =>
+          offerMessageToQueue(queue, msg)
         }
-        .map(list => list.collect { case Some(i) => i })
-      (csOpt, btOpt) = msgsSimValue.foldLeft((none[CarriageSpeed], none[BedTemperature]))(
-        (acc: (Option[CarriageSpeed], Option[BedTemperature]), item: SimValue) => {
-          item match {
-            case bt: BedTemperature => (acc._1, Some(bt))
-            case cs: CarriageSpeed  => (Some(cs), acc._2)
-          }
-        }
-      )
-      _             <- csOpt match {
-        case Some(v) => queue.offer(v)
-        case None    => IO.unit
       }
-      _             <- btOpt match {
-        case Some(v) => queue.offer(v)
-        case None    => IO.unit
-      }
-    } yield ()
+  }
+
+  def offerMessageToQueue(queue: Queue[IO, SimValue], msg: String): IO[Unit] = {
+    IO.fromEither(decode[SimValue](msg))
+      .flatMap(simValue => queue.offer(simValue))
+      .handleErrorWith { err => IO.delay(println(s"Error during message parsing, msg: $msg, err: $err")) }
   }
 
   private def poll(consumer: Consumer[IO, String, String]): IO[List[String]] =
