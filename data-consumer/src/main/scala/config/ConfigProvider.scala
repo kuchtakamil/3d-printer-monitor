@@ -43,7 +43,6 @@ object ConfigProvider {
 
     def customKafkaCfg: ConsumerConfig = {
       val kafkaConfig: Result[KafkaConfig] = ConfigSource.default.at("data-consumer-kafka-config").load[KafkaConfig]
-
       kafkaConfig match {
         case Right(cfg) =>
           val kafkaCommonConfig = CommonConfig.Default.copy(

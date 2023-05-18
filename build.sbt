@@ -20,7 +20,7 @@ lazy val `data-consumer` =
     .in(file("data-consumer"))
     .dependsOn(model)
     .settings(
-      Compile / mainClass := Some("KafkaConsumer")
+      Compile / mainClass := Some("Launcher")
     )
     .settings(consumerDeps, commonDeps)
 
@@ -29,7 +29,7 @@ lazy val `sensor-simulator` =
     .in(file("sensor-simulator"))
     .dependsOn(model)
     .settings(
-      Compile / mainClass := Some("DeviceSimulatorProducer")
+      Compile / mainClass := Some("Launcher")
     )
     .settings(producerDeps, commonDeps)
 
