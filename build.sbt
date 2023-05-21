@@ -39,6 +39,7 @@ lazy val http4sVer     = "0.23.18"
 lazy val circeVer      = "0.14.5"
 lazy val pureconfigVer = "0.17.2"
 lazy val fs2Ver        = "3.6.1"
+lazy val scalatestVer  = "3.2.16"
 
 val commonDeps   =
   Seq(
@@ -54,8 +55,10 @@ val commonDeps   =
 val producerDeps =
   Seq(
     libraryDependencies ++= Seq(
-      "com.evolutiongaming" %% "skafka"   % skafkaVer,
-      "co.fs2"              %% "fs2-core" % fs2Ver,
+      "com.evolutiongaming" %% "skafka"    % skafkaVer,
+      "co.fs2"              %% "fs2-core"  % fs2Ver,
+      "org.scalactic"       %% "scalactic" % scalatestVer,
+      "org.scalatest"       %% "scalatest" % scalatestVer % "test",
     )
   )
 

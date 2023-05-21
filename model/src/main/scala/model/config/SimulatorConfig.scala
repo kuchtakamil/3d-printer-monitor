@@ -5,7 +5,6 @@ object SimulatorConfig {
   val bedTemp       = "bed-temp"
   case class ConfigPayload(
     valueRange: ValueRange,
-    validValueRange: ValueRange,
     initValue: Int,
     frequency: Int,
     avgDelta: Int,
