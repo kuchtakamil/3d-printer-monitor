@@ -1,9 +1,9 @@
 package model.config
 
-object ConsumerConfig {
+object DataConsumerConfig {
   val carriageSpeed = "carriage-speed"
   val bedTemp       = "bed-temp"
-  case class WebSocketConfig(host: String, port: String, websocketEndpoint: String)
+  case class WebSocketConfig(host: String, port: String)
 
   case class KafkaConfig(host: String, port: String, clientId: String, groupId: String)
 
