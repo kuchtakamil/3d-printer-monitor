@@ -6,8 +6,6 @@ import model.config.SimulatorConfig.{ConfigPayload, Simulator, ValueRange}
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.language.postfixOps
-
 class ConfigProviderSpec extends AsyncFlatSpec with Matchers {
 
   "ConfigProvider" should "load custom Kafka config" in {
